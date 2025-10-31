@@ -25,12 +25,14 @@ public class ContentsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<ActionResult> Create([FromBody] ContentCreateDto dto, CancellationToken ct)
     {
         var id = await _svc.CreateAsync(dto, ct);
         return CreatedAtAction(nameof(GetById), new { id }, null);
     }
 
+    [Authorize]
     [HttpPut("{id:guid}")]
     public async Task<ActionResult> Update(Guid id, [FromBody] ContentUpdateDto dto, CancellationToken ct)
     {
@@ -38,6 +40,7 @@ public class ContentsController : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult> Delete(Guid id, CancellationToken ct)
     {

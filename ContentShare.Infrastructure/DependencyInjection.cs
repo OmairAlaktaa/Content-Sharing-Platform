@@ -34,6 +34,7 @@ public static class DependencyInjection
         })
         .AddRoles<IdentityRole<Guid>>()
         .AddEntityFrameworkStores<AppDbContext>()
+        .AddSignInManager()
         .AddDefaultTokenProviders();
 
         var key = config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key missing from configuration");
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IContentRepository, ContentRepository>();
 
         services.AddScoped<IContentService, ContentService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }
