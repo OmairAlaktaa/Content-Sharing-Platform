@@ -1,11 +1,11 @@
-﻿using ContentShare.Domain.Common;
+﻿namespace ContentShare.Application.DTOs.Rating;
 
-namespace ContentShare.Domain.Entities;
-
-public class Rating : BaseEntity
+public class RatingDto
 {
+    public Guid Id { get; set; }
     public Guid MediaContentId { get; set; }
     public Guid UserId { get; set; }
     public int Score { get; set; }
     public string? Comment { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

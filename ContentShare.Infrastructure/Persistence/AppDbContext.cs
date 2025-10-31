@@ -6,12 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ContentShare.Infrastructure.Persistence;
 
-public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options)
 {
     public DbSet<MediaContent> MediaContents => Set<MediaContent>();
     public DbSet<Rating> Ratings => Set<Rating>();
-
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -22,12 +20,29 @@ public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
             e.Property(p => p.Title).IsRequired().HasMaxLength(200);
             e.Property(p => p.ThumbnailUrl).IsRequired();
             e.Property(p => p.ContentUrl).IsRequired();
+            e.HasMany(x => x.Ratings)
+             .WithOne()
+             .HasForeignKey(r => r.MediaContentId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Rating>(e =>
         {
             e.Property(p => p.Score).IsRequired();
-            e.HasIndex(p => new { p.MediaContentId, p.UserId, p.CreatedAt });
+            e.Property(p => p.Comment).HasMaxLength(1000);
+
+            e.HasOne<AppUser>()
+             .WithMany()
+             .HasForeignKey(r => r.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(p => new { p.MediaContentId, p.UserId }).IsUnique();
+
+            e.ToTable(t =>
+            {
+                t.HasCheckConstraint("CK_Ratings_Score_Range", "\"Score\" >= 1 AND \"Score\" <= 5");
+            });
+
         });
     }
 }
