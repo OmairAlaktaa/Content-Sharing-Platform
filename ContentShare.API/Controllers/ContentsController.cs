@@ -8,14 +8,15 @@ namespace ContentShare.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ContentsController : ControllerBase
+public class ContentsController(IContentService svc) : ControllerBase
 {
-    private readonly IContentService _svc;
-    public ContentsController(IContentService svc) => _svc = svc;
+    private readonly IContentService _svc = svc;
 
     [HttpGet]
     public async Task<ActionResult<PagedResult<ContentDto>>> Get([FromQuery] PagedRequest req, CancellationToken ct)
-        => Ok(await _svc.GetAsync(req, ct));
+    {
+        return Ok(await _svc.GetAsync(req, ct)); 
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ContentDto>> GetById(Guid id, CancellationToken ct)

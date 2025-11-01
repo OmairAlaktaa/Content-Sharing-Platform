@@ -10,21 +10,33 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 
 namespace ContentShare.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration config,
+        IHostEnvironment env)
     {
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
-        services.AddDbContext<AppDbContext>(opt =>
+        if (env.IsEnvironment("Testing"))
         {
-            var conn = config.GetConnectionString("Default");
-            opt.UseNpgsql(conn, npg => npg.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
-        });
+            services.AddDbContext<AppDbContext>(opt =>
+                opt.UseInMemoryDatabase("ContentShare_TestDb"));
+        }
+        else
+        {
+            services.AddDbContext<AppDbContext>(opt =>
+            {
+                var conn = config.GetConnectionString("Default");
+                opt.UseNpgsql(conn, npg => npg.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
+            });
+        }
 
         services.AddIdentityCore<AppUser>(opt =>
         {
@@ -37,7 +49,7 @@ public static class DependencyInjection
         .AddSignInManager()
         .AddDefaultTokenProviders();
 
-        var key = config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key missing from configuration");
+        var key = config["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key missing");
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(o =>
             {
@@ -55,10 +67,9 @@ public static class DependencyInjection
 
         services.AddScoped<IContentRepository, ContentRepository>();
         services.AddScoped<IRatingRepository, RatingRepository>();
-
         services.AddScoped<IContentService, ContentService>();
-        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IRatingService, RatingService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

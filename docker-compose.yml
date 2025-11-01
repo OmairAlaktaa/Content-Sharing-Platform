@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/ContentShare.API/Dockerfile
+    container_name: contentshare_api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=contentshare;Username=postgres;Password=postgres"
+      Jwt__Issuer: "ContentShare"
+      Jwt__Audience: "ContentShareClients"
+      Jwt__Key: "REPLACE-WITH-AT-LEAST-32-BYTES-SECRET-xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/swagger"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: contentshare_db
+    environment:
+      POSTGRES_DB: "contentshare"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d contentshare"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: contentshare_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@local.test"
+      PGADMIN_DEFAULT_PASSWORD: "admin123"
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
