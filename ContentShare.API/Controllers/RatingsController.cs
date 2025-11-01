@@ -12,8 +12,8 @@ public class RatingsController(IRatingService ratings) : ControllerBase
 {
     private readonly IRatingService _ratings = ratings;
 
-    //[Authorize]
     [HttpPost]
+    [Authorize]
     [ProducesResponseType(typeof(RatingDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -29,6 +29,7 @@ public class RatingsController(IRatingService ratings) : ControllerBase
     }
 
     [HttpGet("content/{contentId:guid}")]
+    [Authorize]
     [ProducesResponseType(typeof(IEnumerable<RatingDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IEnumerable<RatingDto>>> GetByContent(Guid contentId, CancellationToken ct)
@@ -38,6 +39,7 @@ public class RatingsController(IRatingService ratings) : ControllerBase
     }
 
     [HttpGet("content/{contentId:guid}/average")]
+    [Authorize]
     [ProducesResponseType(typeof(double), StatusCodes.Status200OK)]
     public async Task<ActionResult<double>> GetAverage(Guid contentId, CancellationToken ct)
     {

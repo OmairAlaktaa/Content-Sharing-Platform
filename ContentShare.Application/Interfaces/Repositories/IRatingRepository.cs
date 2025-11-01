@@ -9,4 +9,7 @@ public interface IRatingRepository
     Task UpdateAsync(Rating rating, CancellationToken ct = default);
     Task<List<Rating>> GetByContentAsync(Guid mediaContentId, CancellationToken ct = default);
     Task<double> GetAverageForContentAsync(Guid mediaContentId, CancellationToken ct = default);
+    Task<Rating?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task SaveChangesAsync(CancellationToken ct = default);
 }

@@ -5,11 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ContentShare.Infrastructure.Repositories;
 
-public class RatingRepository : IRatingRepository
+public class RatingRepository(AppDbContext db) : IRatingRepository
 {
-    private readonly AppDbContext _db;
-
-    public RatingRepository(AppDbContext db) => _db = db;
+    private readonly AppDbContext _db = db;
 
     public Task<Rating?> GetByUserAndContentAsync(Guid userId, Guid mediaContentId, CancellationToken ct = default)
         => _db.Ratings.FirstOrDefaultAsync(r => r.UserId == userId && r.MediaContentId == mediaContentId, ct)!;
@@ -38,4 +36,17 @@ public class RatingRepository : IRatingRepository
             .Select(r => (double)r.Score)
             .DefaultIfEmpty(0)
             .AverageAsync(ct);
+
+    public Task<Rating?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    => db.Ratings.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, ct);
+
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var entity = await db.Ratings.FirstOrDefaultAsync(r => r.Id == id, ct);
+        if (entity != null)
+            db.Ratings.Remove(entity);
+    }
+
+    public Task SaveChangesAsync(CancellationToken ct = default)
+        => db.SaveChangesAsync(ct);
 }

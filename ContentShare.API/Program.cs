@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
-builder.Services.AddApi();
+builder.Services.AddApi(builder.Configuration);
 
 builder.WebHost.UseSentry(options =>
 {
@@ -39,6 +39,11 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+if (app.Configuration.GetValue<bool>("Hmac:Enabled"))
+{
+    app.UseMiddleware<HmacMiddleware>();
+}
 
 app.MapControllers();
 

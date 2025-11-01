@@ -10,6 +10,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
 {
     public DbSet<MediaContent> MediaContents => Set<MediaContent>();
     public DbSet<Rating> Ratings => Set<Rating>();
+    public DbSet<Report> Reports => Set<Report>();
+
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -43,6 +45,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
                 t.HasCheckConstraint("CK_Ratings_Score_Range", "\"Score\" >= 1 AND \"Score\" <= 5");
             });
 
+        });
+
+        b.Entity<Report>(e =>
+        {
+            e.Property(p => p.Reason).IsRequired();
+            e.Property(p => p.Note).HasMaxLength(1000);
+            e.HasIndex(p => new { p.RatingId, p.ReporterUserId }).IsUnique();
         });
     }
 }
