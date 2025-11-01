@@ -15,42 +15,126 @@ public static class SeedData
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
         var userManager = services.GetRequiredService<UserManager<AppUser>>();
 
-        await db.Database.MigrateAsync(ct);
+        if (db.Database.IsRelational())
+        {
+            await db.Database.MigrateAsync(ct);
+        }
 
-        #region Sample Roles
         var roles = new[] { "Admin", "User" };
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
+            {
                 await roleManager.CreateAsync(new IdentityRole<Guid>(role));
+            }
         }
-        #endregion
 
-        #region Sample Users
-        await EnsureUserAsync(userManager, "joe", "joe@test.com", "P@ssw0rd1!", new[] { "Admin" });
-        await EnsureUserAsync(userManager, "alice", "alice@test.com", "P@ssw0rd1!", new[] { "User" });
-        await EnsureUserAsync(userManager, "bob", "bob@test.com", "P@ssw0rd1!", new[] { "User" });
-        #endregion
 
-        #region Sample media content
+        var joe = await EnsureUserAsync(userManager, "joe", "joe@test.com", "P@ssw0rd1!", new[] { "Admin" });
+        var alice = await EnsureUserAsync(userManager, "alice", "alice@test.com", "P@ssw0rd1!", new[] { "User" });
+        var bob = await EnsureUserAsync(userManager, "bob", "bob@test.com", "P@ssw0rd1!", new[] { "User" });
+
+        joe = await userManager.FindByEmailAsync("joe@test.com") ?? throw new InvalidOperationException("Seed user joe missing.");
+        alice = await userManager.FindByEmailAsync("alice@test.com") ?? throw new InvalidOperationException("Seed user alice missing.");
+        bob = await userManager.FindByEmailAsync("bob@test.com") ?? throw new InvalidOperationException("Seed user bob missing.");
+
         if (!await db.MediaContents.AnyAsync(ct))
         {
             var now = DateTime.UtcNow;
-            var items = new[]
+
+            var contents = new[]
             {
-                new MediaContent { Title = "Indie Game Alpha", Category = MediaCategory.Game, ThumbnailUrl = "https://picsum.photos/seed/game1/200", ContentUrl = "https://example.com/game1", Description = "Prototype", CreatedAt = now },
-                new MediaContent { Title = "Trailer Video", Category = MediaCategory.Video, ThumbnailUrl = "https://picsum.photos/seed/video1/200", ContentUrl = "https://example.com/video1", Description = "Launch trailer", CreatedAt = now },
-                new MediaContent { Title = "Cover Artwork", Category = MediaCategory.Artwork, ThumbnailUrl = "https://picsum.photos/seed/art1/200", ContentUrl = "https://example.com/art1", Description = "Key art", CreatedAt = now },
-                new MediaContent { Title = "OST Track 01", Category = MediaCategory.Music, ThumbnailUrl = "https://picsum.photos/seed/music1/200", ContentUrl = "https://example.com/music1", Description = "Theme", CreatedAt = now },
-                new MediaContent { Title = "Level Preview", Category = MediaCategory.Video, ThumbnailUrl = "https://picsum.photos/seed/video2/200", ContentUrl = "https://example.com/video2", Description = "Level 2", CreatedAt = now }
+                new MediaContent
+                {
+                    Title = "Indie Game Alpha",
+                    Description = "Prototype build and teaser",
+                    Category = MediaCategory.Game,
+                    ThumbnailUrl = "https://picsum.photos/seed/game1/200",
+                    ContentUrl = "https://example.com/game1",
+                    CreatedAt = now.AddDays(-10)
+                },
+                new MediaContent
+                {
+                    Title = "Trailer Video",
+                    Description = "Launch trailer",
+                    Category = MediaCategory.Video,
+                    ThumbnailUrl = "https://picsum.photos/seed/video1/200",
+                    ContentUrl = "https://example.com/video1",
+                    CreatedAt = now.AddDays(-9)
+                },
+                new MediaContent
+                {
+                    Title = "Cover Artwork",
+                    Description = "Key art pack",
+                    Category = MediaCategory.Artwork,
+                    ThumbnailUrl = "https://picsum.photos/seed/art1/200",
+                    ContentUrl = "https://example.com/art1",
+                    CreatedAt = now.AddDays(-8)
+                },
+                new MediaContent
+                {
+                    Title = "TTT Track 01",
+                    Description = "Theme music",
+                    Category = MediaCategory.Music,
+                    ThumbnailUrl = "https://picsum.photos/seed/music1/200",
+                    ContentUrl = "https://example.com/music1",
+                    CreatedAt = now.AddDays(-7)
+                },
+                new MediaContent
+                {
+                    Title = "Level Preview",
+                    Description = "Early level walkthrough",
+                    Category = MediaCategory.Video,
+                    ThumbnailUrl = "https://picsum.photos/seed/video2/200",
+                    ContentUrl = "https://example.com/video2",
+                    CreatedAt = now.AddDays(-6)
+                }
             };
-            db.MediaContents.AddRange(items);
+
+            await db.MediaContents.AddRangeAsync(contents, ct);
             await db.SaveChangesAsync(ct);
         }
-        #endregion
+
+        if (!await db.Ratings.AnyAsync(ct))
+        {
+            var now = DateTime.UtcNow;
+
+            var c1 = await db.MediaContents.OrderBy(c => c.CreatedAt).Skip(0).FirstAsync(ct);
+            var c2 = await db.MediaContents.OrderBy(c => c.CreatedAt).Skip(1).FirstAsync(ct);
+            var c3 = await db.MediaContents.OrderBy(c => c.CreatedAt).Skip(2).FirstAsync(ct);
+            var c4 = await db.MediaContents.OrderBy(c => c.CreatedAt).Skip(3).FirstAsync(ct);
+            var c5 = await db.MediaContents.OrderBy(c => c.CreatedAt).Skip(4).FirstAsync(ct);
+
+            var ratings = new List<Rating>
+            {
+                new Rating { MediaContentId = c1.Id, UserId = joe.Id,   Score = 5, Comment = "Loved it",           CreatedAt = now.AddDays(-5) },
+                new Rating { MediaContentId = c1.Id, UserId = joe.Id,   Score = 3, Comment = "On second thought…", CreatedAt = now.AddDays(-4) },
+
+                new Rating { MediaContentId = c2.Id, UserId = joe.Id,   Score = 4, Comment = "Solid",              CreatedAt = now.AddDays(-3) },
+                new Rating { MediaContentId = c2.Id, UserId = alice.Id, Score = 5, Comment = "Fantastic",          CreatedAt = now.AddDays(-2) },
+
+                new Rating { MediaContentId = c3.Id, UserId = alice.Id, Score = 2, Comment = "Not my style",       CreatedAt = now.AddDays(-2) },
+                new Rating { MediaContentId = c4.Id, UserId = alice.Id, Score = 4, Comment = "Chill vibes",        CreatedAt = now.AddDays(-1) },
+
+                new Rating { MediaContentId = c5.Id, UserId = bob.Id,   Score = 5, Comment = "Great reference!",   CreatedAt = now.AddDays(-1) }
+            };
+
+            await db.Ratings.AddRangeAsync(ratings, ct);
+            await db.SaveChangesAsync(ct);
+        }
+
+        async Task UpdateRatingCountAsync(AppUser u)
+        {
+            u.RatingCount = await db.Ratings.CountAsync(r => r.UserId == u.Id, ct);
+            await userManager.UpdateAsync(u);
+        }
+
+        await UpdateRatingCountAsync(joe);
+        await UpdateRatingCountAsync(alice);
+        await UpdateRatingCountAsync(bob);
     }
 
-    private static async Task EnsureUserAsync(
+    private static async Task<AppUser> EnsureUserAsync(
         UserManager<AppUser> userManager,
         string username,
         string email,
@@ -58,7 +142,7 @@ public static class SeedData
         IEnumerable<string> roles)
     {
         var existing = await userManager.FindByEmailAsync(email);
-        if (existing != null) return;
+        if (existing != null) return existing;
 
         var user = new AppUser
         {
@@ -70,13 +154,21 @@ public static class SeedData
 
         var create = await userManager.CreateAsync(user, password);
         if (!create.Succeeded)
-            throw new Exception("Failed to create seed user: " + string.Join("; ", create.Errors.Select(e => e.Description)));
+        {
+            var msg = string.Join("; ", create.Errors.Select(e => e.Description));
+            throw new Exception("Failed to create seed user: " + msg);
+        }
 
         if (roles.Any())
         {
             var addRoles = await userManager.AddToRolesAsync(user, roles);
             if (!addRoles.Succeeded)
-                throw new Exception("Failed to add roles to seed user: " + string.Join("; ", addRoles.Errors.Select(e => e.Description)));
+            {
+                var msg = string.Join("; ", addRoles.Errors.Select(e => e.Description));
+                throw new Exception("Failed to add roles to seed user: " + msg);
+            }
         }
+
+        return user;
     }
 }
