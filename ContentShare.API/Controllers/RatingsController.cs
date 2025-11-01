@@ -1,8 +1,10 @@
-﻿using System.Security.Claims;
+﻿using ContentShare.API.SwaggerExamples.Ratings;
 using ContentShare.Application.DTOs.Rating;
 using ContentShare.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Filters;
+using System.Security.Claims;
 
 namespace ContentShare.API.Controllers;
 
@@ -14,10 +16,8 @@ public class RatingsController(IRatingService ratings) : ControllerBase
 
     [HttpPost]
     [Authorize]
-    [ProducesResponseType(typeof(RatingDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [SwaggerRequestExample(typeof(RatingCreateDto), typeof(RatingCreateDtoExample))]
+    [SwaggerResponseExample(StatusCodes.Status201Created, typeof(RatingDtoExample))]
     public async Task<ActionResult<RatingDto>> AddOrUpdate([FromBody] RatingCreateDto dto, CancellationToken ct)
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");

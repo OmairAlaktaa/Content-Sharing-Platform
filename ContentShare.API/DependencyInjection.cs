@@ -1,6 +1,7 @@
 ﻿using ContentShare.API.Swagger;
 using FluentValidation.AspNetCore;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace ContentShare.API;
 
@@ -19,9 +20,13 @@ public static class DependencyInjection
         services.AddFluentValidationAutoValidation();
         services.AddFluentValidationClientsideAdapters();
 
+
+        services.AddSwaggerExamplesFromAssemblyOf<SwaggerExamplesAnchor>();
+
         services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo { Title = "ContentShare API", Version = "v1" });
+
             var scheme = new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -32,10 +37,15 @@ public static class DependencyInjection
                 Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             };
             options.AddSecurityDefinition("Bearer", scheme);
-            options.OperationFilter<HmacHeaderOperationFilter>();
             options.AddSecurityRequirement(new OpenApiSecurityRequirement { { scheme, Array.Empty<string>() } });
+
+            options.OperationFilter<HmacHeaderOperationFilter>();
+
+            options.ExampleFilters();
         });
 
         return services;
     }
 }
+
+public sealed class SwaggerExamplesAnchor { }
